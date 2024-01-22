@@ -1,26 +1,23 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Windows.Input;
 
 namespace LocalizationProject
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        private (string KeyPrefix, string Key, string Text) list = new();
-        private GridView gridView = new();
+        private readonly (string KeyPrefix, string Key, string Text) list = new();
 
+        private readonly List<(string name, Type type)> headerColumns = new();
 
         public MainWindow()
         {
             InitializeComponent();
 
-            gridView.Columns.Add(BuildingGridViewColumn("Key"));
-            ListTable.View = gridView;
+            DataGridTable.Columns.Add(BuildingGridViewColumn("Key"));
+
+            headerColumns.Add(("Key", typeof(string)));
         }
 
         /// <summary>
@@ -28,7 +25,9 @@ namespace LocalizationProject
         /// </summary>
         private void BuildingTable()
         {
+            object newClass = UnknownClass.BuildingClass("MainClass", headerColumns);
 
+            DataGridTable.Items.Add(newClass);
         }
 
         /// <summary>
@@ -36,25 +35,17 @@ namespace LocalizationProject
         /// </summary>
         /// <param name="bindingName">Строка подключения/Наименование колонки</param>
         /// <returns>Колонка</returns>
-        private GridViewColumn BuildingGridViewColumn(string bindingName) =>
-            new(){ Header = bindingName, DisplayMemberBinding = new Binding(bindingName) };
-
-        /*
-         * <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:system="clr-namespace:System;assembly=System.Runtime">
-
-                <system:String x:Key="{Key-Prefix}.{Key}">{Text}</system:String>
-
-            </ResourceDictionary>
-        */
+        private DataGridTextColumn BuildingGridViewColumn(string bindingName) =>
+            new() { Header = bindingName, Binding = new Binding(bindingName) };
 
         /// <summary>
-        /// Создание необходим  ой строки
+        /// Создание необходимой строки
         /// </summary>
         /*<system:String x:Key="{Key-Prefix}.{Key}">{Text}</system:String>*/
         private string BuildingStrings() =>
             $"<system:String x:Key=\"{list.KeyPrefix}.{list.Key}\">{list.Text}</system:String>";
+
+        #region Обработчики
 
         /// <summary>
         /// Сформированные таблицы
@@ -70,7 +61,17 @@ namespace LocalizationProject
             if (Language.Text == "" || Language.Text == null)
                 return;
 
-            gridView.Columns.Add(BuildingGridViewColumn(Language.Text.Trim()));
+            DataGridTable.Columns.Add(BuildingGridViewColumn(Language.Text.Trim()));
+
+            headerColumns.Add((Language.Text.Trim(), typeof(string)));
+
+            Language.Clear();
+        }
+        #endregion
+
+        private void DataGridTable_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            
         }
     }
 }

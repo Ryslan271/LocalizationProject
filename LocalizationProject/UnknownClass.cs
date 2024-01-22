@@ -1,5 +1,7 @@
-﻿using System.Reflection;
+﻿using System.ComponentModel;
+using System.Reflection;
 using System.Reflection.Emit;
+using System.Windows;
 
 namespace LocalizationProject
 {
@@ -47,17 +49,15 @@ namespace LocalizationProject
         /// <param name="propertyName">Наименование свойства</param>
         /// <param name="value">Значение свойства с неизвестным типом</param>
         /// <returns>True\Сообщение об ошибке</returns>
-        public static object SetProperty<T>(object currentClass, string propertyName, T value)
+        public static void SetProperty<T>(object currentClass, string propertyName, T value)
         {
             try
             {
-                currentClass.GetType().GetProperty(propertyName)!.SetValue(currentClass, value);
-
-                return true;
+                currentClass.GetType().GetProperty(propertyName)!.SetValue(currentClass, value!.ToString());
             }
             catch (Exception ex)
             {
-                return ex.Message;
+                MessageBox.Show(ex.Message);
             }
         }
 

@@ -85,10 +85,12 @@
 
         </StackPanel>
 
-        <ListView
-            x:Name="ListTable"
+        <DataGrid
+            x:Name="DataGridTable"
             Grid.Row="2"
             Grid.ColumnSpan="4"
-            Margin="5" />
+            Margin="5"
+            IsEnabled="False"
+            MouseDoubleClick="DataGridTable_MouseDoubleClick" />
     </Grid>
 </Window>
