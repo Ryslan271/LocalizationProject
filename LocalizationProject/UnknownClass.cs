@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Reflection.PortableExecutable;
 using System.Windows;
 
 namespace LocalizationProject
@@ -20,7 +21,49 @@ namespace LocalizationProject
             foreach (var (property, type) in properties)
                 AddProperty(dynamicClass, property, type);
 
+            dynamicClass = Inheritance(dynamicClass); // наследование класса
+
             return Activator.CreateInstance(dynamicClass.CreateType())!;
+        }
+
+        private static TypeBuilder Inheritance(TypeBuilder dynamicClass)
+        {
+            dynamicClass.AddInterfaceImplementation(typeof(IEditableCollectionView));
+
+            // Реализуем методы и свойства интерфейса IEditableCollectionView
+
+            // get_NewItemPlaceholderPosition
+            MethodBuilder methodBuilder = dynamicClass.DefineMethod(
+                "get_NewItemPlaceholderPosition",
+                MethodAttributes.Public | MethodAttributes.Virtual,
+                typeof(NewItemPlaceholderPosition),
+                Type.EmptyTypes
+            );
+
+            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+            Label labelReturnValueNotNull = ilGenerator.DefineLabel();
+            LocalBuilder returnValue = ilGenerator.DeclareLocal(typeof(NewItemPlaceholderPosition));
+            ilGenerator.Emit(OpCodes.Ldloc, returnValue);
+            ilGenerator.MarkLabel(labelReturnValueNotNull);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            // не могу реализовать set для NewItemPlaceholderPosition
+
+            methodBuilder = dynamicClass.DefineMethod(
+                "set_NewItemPlaceholderPosition",
+                MethodAttributes.Public | MethodAttributes.Virtual,
+                typeof(NewItemPlaceholderPosition),
+                new Type[] { typeof(NewItemPlaceholderPosition) }
+            );
+
+            ilGenerator = methodBuilder.GetILGenerator();
+            labelReturnValueNotNull = ilGenerator.DefineLabel();
+            returnValue = ilGenerator.DeclareLocal(typeof(NewItemPlaceholderPosition));
+            ilGenerator.Emit(OpCodes.Ldloc, returnValue);
+            ilGenerator.MarkLabel(labelReturnValueNotNull);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            return dynamicClass;
         }
 
         /// <summary>

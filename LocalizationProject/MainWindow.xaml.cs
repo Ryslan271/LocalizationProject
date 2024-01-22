@@ -13,6 +13,7 @@ namespace LocalizationProject
 
         public MainWindow()
         {
+
             InitializeComponent();
 
             DataGridTable.Columns.Add(BuildingGridViewColumn("Key"));
