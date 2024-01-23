@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Input;
 
 namespace LocalizationProject
 {
@@ -15,20 +14,22 @@ namespace LocalizationProject
 
         private object? unknownClass;
 
-        public MainWindow()
-        {
+        public MainWindow() =>
             InitializeComponent();
-        }
 
         /// <summary>
         /// Формирование таблицы
         /// </summary>
         private void BuildingTable()
         {
-            unknownClass ??= UnknownClass.BuildingClass($"MainClass{unknownClasses.Count() + 1}", headerColumns);
+            if (unknownClasses.Count() != 0)
+                return;
+
+            unknownClass ??= UnknownClass.BuildingClass($"MainClass", headerColumns);
 
             unknownClasses.Add(unknownClass);
 
+            DataGridTable.Columns.Clear();
             DataGridTable.ItemsSource = unknownClasses;
         }
 
@@ -70,5 +71,16 @@ namespace LocalizationProject
             Language.Clear();
         }
         #endregion
+
+        private void GetPTable(object sender, RoutedEventArgs e)
+        {
+            List<string> mess = new();
+
+            for (int i = 0; i < DataGridTable.Columns.Count(); i++)
+            {
+                mess.Add(UnknownClass.GetProperty(unknownClass!, DataGridTable.Columns[i].Header.ToString()!).ToString());
+            }
+            MessageBox.Show(string.Join("\n", mess));
+        }
     }
 }
