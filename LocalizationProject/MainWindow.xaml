@@ -89,7 +89,6 @@
             x:Name="DataGridTable"
             Grid.Row="2"
             Grid.ColumnSpan="4"
-            Margin="5"
-            MouseDoubleClick="DataGridTable_MouseDoubleClick" />
+            Margin="5" />
     </Grid>
 </Window>

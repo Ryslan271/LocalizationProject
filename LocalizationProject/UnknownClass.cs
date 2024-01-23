@@ -1,16 +1,13 @@
 ﻿using System.ComponentModel;
-using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Data;
 
 namespace LocalizationProject
 {
     public static class UnknownClass
     {
+
         #region Get and Set
         /// <summary>
         /// Получение значение свойства класса
@@ -65,13 +62,13 @@ namespace LocalizationProject
             foreach (var (property, type) in properties)
                 AddProperty(dynamicClass, property, type);
 
-            dynamicClass = Inheritance(dynamicClass, typeof(IEditableCollectionView)); // наследование класса
-
+           // dynamicClass = Inheritance(dynamicClass, typeof(IEditableCollectionView)); // наследование класса
+            
             return Activator.CreateInstance(dynamicClass.CreateType())!;
         }
 
         private static TypeBuilder Inheritance(TypeBuilder dynamicClass, Type type)
-        { 
+        {
 
             dynamicClass.AddInterfaceImplementation(type);
 

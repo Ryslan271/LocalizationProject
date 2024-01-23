@@ -11,14 +11,13 @@ namespace LocalizationProject
 
         private readonly List<(string name, Type type)> headerColumns = new();
 
+        private List<object> unknownClasses = new();
+
+        private object? unknownClass;
+
         public MainWindow()
         {
-
             InitializeComponent();
-
-            DataGridTable.Columns.Add(BuildingGridViewColumn("Key"));
-
-            headerColumns.Add(("Key", typeof(string)));
         }
 
         /// <summary>
@@ -26,9 +25,11 @@ namespace LocalizationProject
         /// </summary>
         private void BuildingTable()
         {
-            object newClass = UnknownClass.BuildingClass("MainClass", headerColumns);
+            unknownClass ??= UnknownClass.BuildingClass($"MainClass{unknownClasses.Count() + 1}", headerColumns);
 
-            DataGridTable.Items.Add(newClass);
+            unknownClasses.Add(unknownClass);
+
+            DataGridTable.ItemsSource = unknownClasses;
         }
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace LocalizationProject
         /// <param name="bindingName">Строка подключения/Наименование колонки</param>
         /// <returns>Колонка</returns>
         private DataGridTextColumn BuildingGridViewColumn(string bindingName) =>
-            new() { Header = bindingName, Binding = new Binding(bindingName) };
+            new() { Header = bindingName, Binding = new Binding(bindingName) { Mode = BindingMode.TwoWay } };
 
         /// <summary>
         /// Создание необходимой строки
@@ -69,10 +70,5 @@ namespace LocalizationProject
             Language.Clear();
         }
         #endregion
-
-        private void DataGridTable_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            
-        }
     }
 }
