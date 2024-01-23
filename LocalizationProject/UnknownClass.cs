@@ -1,71 +1,17 @@
 ﻿using System.ComponentModel;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Data;
 
 namespace LocalizationProject
 {
     public static class UnknownClass
     {
-        /// <summary>
-        /// Создание динамического класса
-        /// </summary>
-        /// <param name="className">Наименование класса</param>
-        /// <param name="properties">Свойства (название свойства, тип свойства)</param>
-        /// <returns>object - созданный класс</returns>
-        public static object BuildingClass(string className, List<(string property, Type type)> properties)
-        {
-            TypeBuilder dynamicClass = BuildingType(className);
-
-            foreach (var (property, type) in properties)
-                AddProperty(dynamicClass, property, type);
-
-            dynamicClass = Inheritance(dynamicClass); // наследование класса
-
-            return Activator.CreateInstance(dynamicClass.CreateType())!;
-        }
-
-        private static TypeBuilder Inheritance(TypeBuilder dynamicClass)
-        {
-            dynamicClass.AddInterfaceImplementation(typeof(IEditableCollectionView));
-
-            // Реализуем методы и свойства интерфейса IEditableCollectionView
-
-            // get_NewItemPlaceholderPosition
-            MethodBuilder methodBuilder = dynamicClass.DefineMethod(
-                "get_NewItemPlaceholderPosition",
-                MethodAttributes.Public | MethodAttributes.Virtual,
-                typeof(NewItemPlaceholderPosition),
-                Type.EmptyTypes
-            );
-
-            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-            Label labelReturnValueNotNull = ilGenerator.DefineLabel();
-            LocalBuilder returnValue = ilGenerator.DeclareLocal(typeof(NewItemPlaceholderPosition));
-            ilGenerator.Emit(OpCodes.Ldloc, returnValue);
-            ilGenerator.MarkLabel(labelReturnValueNotNull);
-            ilGenerator.Emit(OpCodes.Ret);
-
-            // не могу реализовать set для NewItemPlaceholderPosition
-
-            methodBuilder = dynamicClass.DefineMethod(
-                "set_NewItemPlaceholderPosition",
-                MethodAttributes.Public | MethodAttributes.Virtual,
-                typeof(NewItemPlaceholderPosition),
-                new Type[] { typeof(NewItemPlaceholderPosition) }
-            );
-
-            ilGenerator = methodBuilder.GetILGenerator();
-            labelReturnValueNotNull = ilGenerator.DefineLabel();
-            returnValue = ilGenerator.DeclareLocal(typeof(NewItemPlaceholderPosition));
-            ilGenerator.Emit(OpCodes.Ldloc, returnValue);
-            ilGenerator.MarkLabel(labelReturnValueNotNull);
-            ilGenerator.Emit(OpCodes.Ret);
-
-            return dynamicClass;
-        }
-
+        #region Get and Set
         /// <summary>
         /// Получение значение свойства класса
         /// </summary>
@@ -103,6 +49,172 @@ namespace LocalizationProject
                 MessageBox.Show(ex.Message);
             }
         }
+        #endregion
+
+        /// <summary>
+        /// Создание динамического класса
+        /// </summary>
+        /// <param name="className">Наименование класса</param>
+        /// <param name="properties">Свойства (название свойства, тип свойства)</param>
+        /// <returns>object - созданный класс</returns>
+        /// 
+        public static object BuildingClass(string className, List<(string property, Type type)> properties)
+        {
+            TypeBuilder dynamicClass = BuildingType(className);
+
+            foreach (var (property, type) in properties)
+                AddProperty(dynamicClass, property, type);
+
+            dynamicClass = Inheritance(dynamicClass, typeof(IEditableCollectionView)); // наследование класса
+
+            return Activator.CreateInstance(dynamicClass.CreateType())!;
+        }
+
+        private static TypeBuilder Inheritance(TypeBuilder dynamicClass, Type type)
+        { 
+
+            dynamicClass.AddInterfaceImplementation(type);
+
+            CreatingPropertyFurtherBinding(dynamicClass, "NewItemPlaceholderPosition",
+                (typeof(NewItemPlaceholderPosition), Type.EmptyTypes), (null, new[] { typeof(NewItemPlaceholderPosition) })); // Создание свойства и привязка методов для него
+
+            // реализация свойств
+            PropertyRelease(dynamicClass);
+
+            //Реализация методов
+            MethodRelease(dynamicClass);
+
+            return dynamicClass;
+        }
+
+        private static void MethodRelease(TypeBuilder dynamicClass)
+        {
+            // Создание методов и привязка их к классу
+            CreatingNewMethod(dynamicClass, "AddNew", MethodAttributes.Public | MethodAttributes.Virtual, typeof(object), new Type[] { });
+            CreatingNewMethod(dynamicClass, "CancelEdit", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { });
+            CreatingNewMethod(dynamicClass, "CancelNew", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { });
+            CreatingNewMethod(dynamicClass, "CommitEdit", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { });
+            CreatingNewMethod(dynamicClass, "CommitNew", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { });
+            CreatingNewMethod(dynamicClass, "EditItem", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(object) });
+            CreatingNewMethod(dynamicClass, "Remove", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(object) });
+            CreatingNewMethod(dynamicClass, "RemoveAt", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(int) });
+        }
+
+        private static void PropertyRelease(TypeBuilder dynamicClass)
+        {
+            // Создание свойства и привязка методов для него
+            CreatingPropertyFurtherBinding(dynamicClass, "CanAddNew", (typeof(bool), Type.EmptyTypes));
+            CreatingPropertyFurtherBinding(dynamicClass, "CanCancelEdit", (typeof(bool), Type.EmptyTypes));
+            CreatingPropertyFurtherBinding(dynamicClass, "CanRemove", (typeof(bool), Type.EmptyTypes));
+            CreatingPropertyFurtherBinding(dynamicClass, "CurrentAddItem", (typeof(object), Type.EmptyTypes));
+            CreatingPropertyFurtherBinding(dynamicClass, "CurrentEditItem", (typeof(object), Type.EmptyTypes));
+            CreatingPropertyFurtherBinding(dynamicClass, "IsAddingNew", (typeof(bool), Type.EmptyTypes));
+            CreatingPropertyFurtherBinding(dynamicClass, "IsEditingItem", (typeof(bool), Type.EmptyTypes));
+        }
+
+        //Создание и привязка методов
+        private static void CreatingNewMethod(TypeBuilder dynamicClass, string name, MethodAttributes attributes, Type? returnType, Type[] parameterTypes)
+        {
+            // Реализация метода AddNew
+            MethodBuilder addNewMethodBuilder = dynamicClass.DefineMethod(name,
+                attributes,
+                returnType,
+                parameterTypes);
+
+            ILGenerator ilGenerator = addNewMethodBuilder.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Newobj, typeof(NotSupportedException).GetConstructor(Type.EmptyTypes)!);
+            ilGenerator.Emit(OpCodes.Throw);
+            dynamicClass.DefineMethodOverride(addNewMethodBuilder, typeof(IEditableCollectionView).GetMethod(name)!);
+        }
+
+        // Создание и привязка свойств
+        private static void CreatingPropertyFurtherBinding(TypeBuilder dynamicClass, string name,
+            (Type? GetReturnType, Type[]? GetparameterTypes) getTypes = default, (Type? SetReturnType, Type[]? SetparameterTypes) setTypes = default)
+        {
+            // Преобразование название свойства
+            (string privateName, string publicName, string getName, string setName) = ConvertPropertyName(name);
+
+            // Создание приватного поле для хранения значения свойства
+            // пример: _newItemPlaceholderPosition
+            var fieldBuilder = dynamicClass.DefineField(privateName, getTypes.GetReturnType!, FieldAttributes.Private);
+
+            // Создание свойства
+            // пример: NewItemPlaceholderPosition
+            var propertyBuilder = dynamicClass.DefineProperty(publicName, PropertyAttributes.None, getTypes.GetReturnType!, getTypes.GetparameterTypes);
+
+            // Указание, что методы get и set являются геттером и сеттером свойства NewItemPlaceholderPosition
+
+            // get_NewItemPlaceholderPosition
+            if (getTypes != default)
+                propertyBuilder.SetGetMethod(GetBuilderOnClass(dynamicClass, fieldBuilder, getName, getTypes.GetReturnType, getTypes.GetparameterTypes!));
+            //set_NewItemPlaceholderPosition
+            if (setTypes != default)
+                propertyBuilder.SetSetMethod(SetBuilderOnClass(dynamicClass, fieldBuilder, setName, setTypes.SetReturnType, setTypes.SetparameterTypes!));
+        }
+
+        /// <summary>
+        /// Преобразование наименования свойства
+        /// </summary>
+        /// <param name="name">Наименование свойства</param>
+        /// <returns>Список из преобразованных наименований свойств</returns>
+        private static (string privateName, string publicName, string getName, string setName) ConvertPropertyName(string name) =>
+            ($"_{name[0].ToString().ToLower() + name.Substring(1)}", name, $"get_{name}", $"set_{name}");
+
+        #region Creating and setting methods for a property
+
+        /// <summary>
+        /// Привязка Get Метода к свойству класса
+        /// </summary>
+        /// <param name="dynamicClass">Класс</param>
+        /// <param name="fieldBuilder">Приватное поле</param>
+        /// <param name="title">Название свойства</param>
+        /// <param name="returnType"></param>
+        /// <param name="parameterTypes">Типы параметров</param>
+        /// <returns>метод для привязка</returns>
+        private static MethodBuilder GetBuilderOnClass(TypeBuilder dynamicClass, FieldBuilder fieldBuilder, string title, Type? returnType, Type[] parameterTypes)
+        {
+            // Создание метода get
+
+            var getMethodBuilder = dynamicClass.DefineMethod(title,
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+                returnType,
+                parameterTypes);
+
+            var ilGeneratorGet = getMethodBuilder.GetILGenerator();
+            ilGeneratorGet.Emit(OpCodes.Ldarg_0); // Загрузка значения "this" на стек
+            ilGeneratorGet.Emit(OpCodes.Ldfld, fieldBuilder); // Загрузка значения поля на стек
+            ilGeneratorGet.Emit(OpCodes.Ret);
+
+            return getMethodBuilder;
+        }
+
+        /// <summary>
+        /// Привязка Set Метода к свойству класса
+        /// </summary>
+        /// <param name="dynamicClass">Класс</param>
+        /// <param name="fieldBuilder">Приватное поле</param>
+        /// <param name="title">Название свойства</param>
+        /// <param name="returnType"></param>
+        /// <param name="parameterTypes">Типы параметров</param>
+        /// <returns>метод для привязка</returns>
+        private static MethodBuilder SetBuilderOnClass(TypeBuilder dynamicClass, FieldBuilder fieldBuilder, string title, Type? returnType, Type[] parameterTypes)
+        {
+            // Создание метода set
+
+            var setMethodBuilder = dynamicClass.DefineMethod(title,
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+                returnType,
+                parameterTypes);
+
+            var ilGeneratorSet = setMethodBuilder.GetILGenerator();
+            ilGeneratorSet.Emit(OpCodes.Ldarg_0); // Загрузка значения "this" на стек
+            ilGeneratorSet.Emit(OpCodes.Ldarg_1); // Загрузка значения аргумента на стек
+            ilGeneratorSet.Emit(OpCodes.Stfld, fieldBuilder); // Присваивание значения полю
+            ilGeneratorSet.Emit(OpCodes.Ret);
+
+            return setMethodBuilder;
+        }
+        #endregion
 
         /// <summary>
         /// Создание динамического класса
