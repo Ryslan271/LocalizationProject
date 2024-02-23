@@ -20,35 +20,21 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <StackPanel
-            Grid.Column="0"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Orientation="Horizontal">
-            <TextBlock Text="File name:" />
+            <TextBlock Text="File path:" />
             <TextBox
-                x:Name="FileName"
+                x:Name="FilePath"
                 MinWidth="50"
                 Margin="10,0,0,0" />
         </StackPanel>
 
         <StackPanel
             Grid.Column="1"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Orientation="Horizontal">
-            <TextBlock Text="Extension:" />
-            <TextBox
-                x:Name="Extension"
-                MinWidth="50"
-                Margin="10,0,0,0" />
-        </StackPanel>
-
-        <StackPanel
-            Grid.Column="2"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Orientation="Horizontal">
@@ -60,14 +46,16 @@
         </StackPanel>
 
         <Button
+            x:Name="FormButton"
             Grid.Column="3"
             Margin="20,10"
             Click="Button_Click"
-            Content="Сформировать" />
+            Content="Сформировать таблицу" />
 
         <StackPanel
             Grid.Row="1"
-            Grid.Column="3"
+            Grid.Column="1"
+            Grid.ColumnSpan="2"
             Margin="0,0,10,2"
             HorizontalAlignment="Right"
             VerticalAlignment="Center"
@@ -86,8 +74,8 @@
             <Button
                 Margin="20,0,0,0"
                 Padding="4,1"
-                Click="GetPTable"
-                Content="Вывод" />
+                Click="CreationFileWIthLocalization"
+                Content="Сохранить в файл" />
 
         </StackPanel>
 

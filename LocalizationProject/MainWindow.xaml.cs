@@ -1,4 +1,7 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.IO;
+using System.Printing;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -6,31 +9,27 @@ namespace LocalizationProject
 {
     public partial class MainWindow : Window
     {
-        private readonly (string KeyPrefix, string Key, string Text) list = new();
+        private List<(string fileName, string KeyPrefix, string Key, string Text)> list = [];
 
-        private readonly List<(string name, Type type)> headerColumns = new();
+        private readonly List<(string name, Type type)> headerColumns = [];
 
-        private List<object> unknownClasses = new();
+        private ObservableCollection<object> UnknownClasses = [];
 
-        private object? unknownClass;
+        public MainWindow()
+        {
+            headerColumns.Add(("Key", typeof(string)));
 
-        public MainWindow() =>
             InitializeComponent();
+        }
 
         /// <summary>
         /// Формирование таблицы
         /// </summary>
         private void BuildingTable()
         {
-            if (unknownClasses.Count() != 0)
-                return;
+            object unknownClass1 = UnknownClass.BuildingClass($"MainClass", headerColumns);
 
-            unknownClass ??= UnknownClass.BuildingClass($"MainClass", headerColumns);
-
-            unknownClasses.Add(unknownClass);
-
-            DataGridTable.Columns.Clear();
-            DataGridTable.ItemsSource = unknownClasses;
+            UnknownClasses.Add(unknownClass1);
         }
 
         /// <summary>
@@ -39,22 +38,33 @@ namespace LocalizationProject
         /// <param name="bindingName">Строка подключения/Наименование колонки</param>
         /// <returns>Колонка</returns>
         private DataGridTextColumn BuildingGridViewColumn(string bindingName) =>
-            new() { Header = bindingName, Binding = new Binding(bindingName) { Mode = BindingMode.TwoWay } };
-
-        /// <summary>
-        /// Создание необходимой строки
-        /// </summary>
-        /*<system:String x:Key="{Key-Prefix}.{Key}">{Text}</system:String>*/
-        private string BuildingStrings() =>
-            $"<system:String x:Key=\"{list.KeyPrefix}.{list.Key}\">{list.Text}</system:String>";
+            new()
+            {
+                Header = bindingName,
+                Binding = new Binding(bindingName)
+                {
+                    Mode = BindingMode.TwoWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                },
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+            };
 
         #region Обработчики
 
         /// <summary>
         /// Сформированные таблицы
         /// </summary>
-        private void Button_Click(object sender, RoutedEventArgs e) =>
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
             BuildingTable();
+
+            DataGridTable.Columns.Clear();
+
+            DataGridTable.ItemsSource = UnknownClasses;
+
+            FormButton.IsEnabled = false;
+
+        }
 
         /// <summary>
         /// Добавление новой колонки
@@ -72,15 +82,66 @@ namespace LocalizationProject
         }
         #endregion
 
-        private void GetPTable(object sender, RoutedEventArgs e)
+        private void CreationFileWIthLocalization(object sender, RoutedEventArgs e)
         {
-            List<string> mess = new();
+            if (KeyPrefix.Text == null || KeyPrefix.Text == "" ||
+                FilePath.Text == null || FilePath.Text == "")
+                return;
 
-            for (int i = 0; i < DataGridTable.Columns.Count(); i++)
+
+            for (int i = 1; i < DataGridTable.Columns.Count; i++)
+                for (int j = 0; j < UnknownClasses.Count; j++)
+                    list.Add(
+                                (
+                                    DataGridTable.Columns[i].Header.ToString()!, // наименование языка
+                                    KeyPrefix.Text.Trim(),
+                                    UnknownClass.GetProperty(UnknownClasses[j], DataGridTable.Columns[0].Header.ToString()!).ToString()!, // ключ (для обращения к локализации в проекте)
+                                    UnknownClass.GetProperty(UnknownClasses[j], DataGridTable.Columns[i].Header.ToString()!).ToString()! // сам текст
+                                )
+                            );
+
+            CreationFile();
+        }
+
+        /// <summary>
+        /// Создание необходимой строки
+        /// </summary>
+        /*<system:String x:Key="{Key-Prefix}.{Key}">{Text}</system:String>*/
+        private string BuildingStrings(string _keyPrefix, string _key, string _text) =>
+            $"<system:String x:key=\"{_keyPrefix}.{_key}\">{_text}</system:String>";
+
+        private string? TextConstruction(string _fileName)
+        {
+            if (KeyPrefix.Text == null || KeyPrefix.Text == "" ||
+                FilePath.Text == null || FilePath.Text == "")
             {
-                mess.Add(UnknownClass.GetProperty(unknownClass!, DataGridTable.Columns[i].Header.ToString()!).ToString());
+                MessageBox.Show("Что то пошло не так, прошу проверить все ли поля заполнены корректно");
+                return null;
             }
-            MessageBox.Show(string.Join("\n", mess));
+
+            string text = "<ResourceDictionary xmlns=\"https://github.com/avaloniaui\"\n" +
+                          "\t\txmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\"\n" +
+                          "\t\txmlns:system=\"clr-namespace:System;assembly=System.Runtime\">\n";
+
+            foreach (var item in list)
+                if (item.fileName == _fileName)
+                    text += $"\t{BuildingStrings(item.KeyPrefix, item.Key, item.Text)}\n";
+
+            text += "\r\n</ResourceDictionary>";
+
+            return text;
+        }
+
+        private void CreationFile()
+        {
+            List<string> fileNames = [];
+
+            foreach (var item in list)
+                if (fileNames.Contains(item.fileName) == false)
+                    fileNames.Add(item.fileName);
+
+            foreach (var item in fileNames)
+                File.WriteAllText($"{FilePath.Text.Trim()}\\{item}.axaml", TextConstruction(item));
         }
     }
 }

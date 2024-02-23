@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Reflection.Emit;
 using System.Windows;
 
@@ -7,6 +6,8 @@ namespace LocalizationProject
 {
     public static class UnknownClass
     {
+
+        private static int index = 0;
 
         #region Get and Set
         /// <summary>
@@ -57,13 +58,13 @@ namespace LocalizationProject
         /// 
         public static object BuildingClass(string className, List<(string property, Type type)> properties)
         {
-            TypeBuilder dynamicClass = BuildingType(className);
+            TypeBuilder dynamicClass = BuildingType(className + $"{index}");
 
             foreach (var (property, type) in properties)
                 AddProperty(dynamicClass, property, type);
 
-           // dynamicClass = Inheritance(dynamicClass, typeof(IEditableCollectionView)); // наследование класса
-            
+            index++;
+
             return Activator.CreateInstance(dynamicClass.CreateType())!;
         }
 
@@ -92,13 +93,21 @@ namespace LocalizationProject
 
             var propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.None, propertyType, null);
 
-            var getMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propertyType, Type.EmptyTypes);
+            var getMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName,
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+                propertyType,
+                Type.EmptyTypes);
+
             var getILGenerator = getMethodBuilder.GetILGenerator();
             getILGenerator.Emit(OpCodes.Ldarg_0);
             getILGenerator.Emit(OpCodes.Ldfld, fieldBuilder);
             getILGenerator.Emit(OpCodes.Ret);
 
-            var setMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, null, new[] { propertyType });
+            var setMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName,
+                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+                null,
+                new[] { propertyType });
+
             var setILGenerator = setMethodBuilder.GetILGenerator();
             setILGenerator.Emit(OpCodes.Ldarg_0);
             setILGenerator.Emit(OpCodes.Ldarg_1);
