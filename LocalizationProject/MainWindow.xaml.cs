@@ -9,11 +9,17 @@ namespace LocalizationProject
 {
     public partial class MainWindow : Window
     {
-        private List<(string fileName, string KeyPrefix, string Key, string Text)> list = [];
+        private readonly List<(string fileName, string KeyPrefix, string Key, string Text)> list = [];
 
         private readonly List<(string name, Type type)> headerColumns = [];
 
-        private ObservableCollection<object> UnknownClasses = [];
+        private readonly ObservableCollection<object> unknownClasses = [];
+
+        public string ResourceDictionaryPatternOpeningTeg { get; set; } = "<ResourceDictionary xmlns=\"https://github.com/avaloniaui\"\n" +
+                                                                          "\t\txmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\"\n" +
+                                                                          "\t\txmlns:system=\"clr-namespace:System;assembly=System.Runtime\">\n";
+
+        public string ResourceDictionaryPatternClosingTeg { get; set; } = "\r\n</ResourceDictionary>";
 
         public MainWindow()
         {
@@ -29,7 +35,7 @@ namespace LocalizationProject
         {
             object unknownClass1 = UnknownClass.BuildingClass($"MainClass", headerColumns);
 
-            UnknownClasses.Add(unknownClass1);
+            unknownClasses.Add(unknownClass1);
         }
 
         /// <summary>
@@ -60,7 +66,7 @@ namespace LocalizationProject
 
             DataGridTable.Columns.Clear();
 
-            DataGridTable.ItemsSource = UnknownClasses;
+            DataGridTable.ItemsSource = unknownClasses;
 
             FormButton.IsEnabled = false;
 
@@ -90,13 +96,13 @@ namespace LocalizationProject
 
 
             for (int i = 1; i < DataGridTable.Columns.Count; i++)
-                for (int j = 0; j < UnknownClasses.Count; j++)
+                for (int j = 0; j < unknownClasses.Count; j++)
                     list.Add(
                                 (
                                     DataGridTable.Columns[i].Header.ToString()!, // наименование языка
                                     KeyPrefix.Text.Trim(),
-                                    UnknownClass.GetProperty(UnknownClasses[j], DataGridTable.Columns[0].Header.ToString()!).ToString()!, // ключ (для обращения к локализации в проекте)
-                                    UnknownClass.GetProperty(UnknownClasses[j], DataGridTable.Columns[i].Header.ToString()!).ToString()! // сам текст
+                                    UnknownClass.GetProperty(unknownClasses[j], DataGridTable.Columns[0].Header.ToString()!).ToString()!, // ключ (для обращения к локализации в проекте)
+                                    UnknownClass.GetProperty(unknownClasses[j], DataGridTable.Columns[i].Header.ToString()!).ToString()! // сам текст
                                 )
                             );
 
@@ -119,15 +125,13 @@ namespace LocalizationProject
                 return null;
             }
 
-            string text = "<ResourceDictionary xmlns=\"https://github.com/avaloniaui\"\n" +
-                          "\t\txmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\"\n" +
-                          "\t\txmlns:system=\"clr-namespace:System;assembly=System.Runtime\">\n";
+            string text = ResourceDictionaryPatternOpeningTeg;
 
             foreach (var item in list)
                 if (item.fileName == _fileName)
                     text += $"\t{BuildingStrings(item.KeyPrefix, item.Key, item.Text)}\n";
 
-            text += "\r\n</ResourceDictionary>";
+            text += ResourceDictionaryPatternClosingTeg;
 
             return text;
         }
