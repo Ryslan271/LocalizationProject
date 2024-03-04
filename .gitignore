@@ -5,3 +5,6 @@
 /.vs
 /.obj
 /LocalizationProject/obj/Release/net7.0-windows
+/LocalizationProject/bin/Debug/net8.0-windows7.0
+/LocalizationProject/obj/Debug/net8.0-windows7.0/ref
+/LocalizationProject/obj/Debug/net8.0-windows7.0/refint
