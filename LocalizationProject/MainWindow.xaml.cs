@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
-using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -60,7 +59,7 @@ namespace LocalizationProject
         /// <summary>
         /// Сформированные таблицы
         /// </summary>
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void AssembleTable(object sender, RoutedEventArgs e)
         {
             BuildingTable();
 
@@ -69,6 +68,10 @@ namespace LocalizationProject
             DataGridTable.ItemsSource = unknownClasses;
 
             FormButton.IsEnabled = false;
+            Language.IsEnabled = false;
+            AddLanguageBtn.IsEnabled = false;
+
+            CreationFileBtn.IsEnabled = true;
 
         }
 
@@ -88,25 +91,31 @@ namespace LocalizationProject
         }
         #endregion
 
-        private void CreationFileWIthLocalization(object sender, RoutedEventArgs e)
+        private void CreationFileWithLocalization(object sender, RoutedEventArgs e)
         {
-            if (KeyPrefix.Text == null || KeyPrefix.Text == "" ||
-                FilePath.Text == null || FilePath.Text == "")
-                return;
+            try
+            {
+                if (ValidationStringField() == false)
+                    return;
 
 
-            for (int i = 1; i < DataGridTable.Columns.Count; i++)
-                for (int j = 0; j < unknownClasses.Count; j++)
-                    list.Add(
-                                (
-                                    DataGridTable.Columns[i].Header.ToString()!, // наименование языка
-                                    KeyPrefix.Text.Trim(),
-                                    UnknownClass.GetProperty(unknownClasses[j], DataGridTable.Columns[0].Header.ToString()!).ToString()!, // ключ (для обращения к локализации в проекте)
-                                    UnknownClass.GetProperty(unknownClasses[j], DataGridTable.Columns[i].Header.ToString()!).ToString()! // сам текст
-                                )
-                            );
+                for (int i = 1; i < DataGridTable.Columns.Count; i++)
+                    for (int j = 0; j < unknownClasses.Count; j++)
+                        list.Add(
+                                    (
+                                        DataGridTable.Columns[i].Header.ToString()!, // наименование языка
+                                        KeyPrefix.Text.Trim(),
+                                        UnknownClass.GetProperty(unknownClasses[j], DataGridTable.Columns[0].Header.ToString()!).ToString()!, // ключ (для обращения к локализации в проекте)
+                                        UnknownClass.GetProperty(unknownClasses[j], DataGridTable.Columns[i].Header.ToString()!).ToString()! // сам текст
+                                    )
+                                );
 
-            CreationFile();
+                CreationFile();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         /// <summary>
@@ -118,12 +127,8 @@ namespace LocalizationProject
 
         private string? TextConstruction(string _fileName)
         {
-            if (KeyPrefix.Text == null || KeyPrefix.Text == "" ||
-                FilePath.Text == null || FilePath.Text == "")
-            {
-                MessageBox.Show("Что то пошло не так, прошу проверить все ли поля заполнены корректно");
+            if (ValidationStringField())
                 return null;
-            }
 
             string text = ResourceDictionaryPatternOpeningTeg;
 
@@ -146,6 +151,32 @@ namespace LocalizationProject
 
             foreach (var item in fileNames)
                 File.WriteAllText($"{FilePath.Text.Trim()}\\{item}.axaml", TextConstruction(item));
+        }
+
+        private bool ValidationStringField()
+        {
+            if (KeyPrefix.Text == null || KeyPrefix.Text == "" ||
+                FilePath.Text == null || FilePath.Text == "")
+            {
+                MessageBox.Show("Что то пошло не так, прошу проверить все ли поля заполнены корректно");
+                return false;
+            }
+            return true;
+        }
+
+        private void ChoosingPathBtn_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFolderDialog dialog = new();
+
+            dialog.Multiselect = false;
+            dialog.Title = "Select a folder";
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                FilePath.Text = dialog.FolderName;
+            }
         }
     }
 }
