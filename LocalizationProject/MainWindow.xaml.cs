@@ -111,6 +111,8 @@ namespace LocalizationProject
                                 );
 
                 CreationFile();
+
+                MessageBox.Show($"Файл(ы) локализации созданы по пути: {FilePath.Text}");
             }
             catch (Exception ex)
             {
@@ -127,7 +129,7 @@ namespace LocalizationProject
 
         private string? TextConstruction(string _fileName)
         {
-            if (ValidationStringField())
+            if (ValidationStringField() == false)
                 return null;
 
             string text = ResourceDictionaryPatternOpeningTeg;
